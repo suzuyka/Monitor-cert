@@ -1,0 +1,14 @@
+services:
+  monitor:
+    build: .
+    environment:
+      - DISPLAY=$DISPLAY
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - cert-monitor-data:/app/data
+    stdin_open: true
+    tty: true
+
+volumes:
+  cert-monitor-data:
+
