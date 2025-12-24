@@ -32,6 +32,9 @@ public:
                         const std::string &newPassword);
     bool clearCertificatesForUser(int userId);
 
+    std::string getDisplayName(int userId);
+    bool setDisplayName(int userId, const std::string &name);
+
 private:
     sqlite3 *db;
     SqlRepository sqlRepo;

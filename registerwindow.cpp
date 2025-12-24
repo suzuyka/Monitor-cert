@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QCryptographicHash>
 
 RegisterWindow::RegisterWindow(Database *db, QWidget *parent)
     : QWidget(parent), m_db(db)
@@ -50,7 +51,7 @@ RegisterWindow::RegisterWindow(Database *db, QWidget *parent)
 }
 
 void RegisterWindow::onRegister() {
-    QString u = userEdit->text();
+    QString u  = userEdit->text();
     QString p1 = passEdit->text();
     QString p2 = pass2Edit->text();
 
@@ -63,7 +64,11 @@ void RegisterWindow::onRegister() {
         return;
     }
 
-    if (!m_db->createUser(u.toStdString(), p1.toStdString())) {
+    // Хеширование пароля
+    QByteArray hash = QCryptographicHash::hash(p1.toUtf8(), QCryptographicHash::Sha256);
+    QString hashHex = hash.toHex();
+
+    if (!m_db->createUser(u.toStdString(), hashHex.toStdString())) {
         QMessageBox::warning(this, "Ошибка", "Такой пользователь уже существует");
         return;
     }

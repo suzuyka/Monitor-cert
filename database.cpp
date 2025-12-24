@@ -1,6 +1,9 @@
 #include "database.h"
 #include <iostream>
 
+#include <QInputDialog>
+#include <QMessageBox>
+
 using namespace std;
 
 Database::Database(const string &filename)
@@ -58,6 +61,7 @@ bool Database::createUser(const string &username, const string &password) {
 
     sqlite3_bind_text(stmt, 1, username.c_str(), -1, SQLITE_TRANSIENT);
     sqlite3_bind_text(stmt, 2, password.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_text(stmt, 3, username.c_str(), -1, SQLITE_TRANSIENT);
 
     bool ok = (sqlite3_step(stmt) == SQLITE_DONE);
     sqlite3_finalize(stmt);
@@ -231,3 +235,41 @@ bool Database::clearCertificatesForUser(int userId)
     sqlite3_finalize(stmt);
     return ok;
 }
+
+std::string Database::getDisplayName(int userId)
+{
+    const std::string &sql = sqlRepo.get("GET_DISPLAY_NAME");
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        return {};
+
+    sqlite3_bind_int(stmt, 1, userId);
+
+    std::string result;
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char *text = sqlite3_column_text(stmt, 0);
+        if (text)
+            result = reinterpret_cast<const char*>(text);
+    }
+
+    sqlite3_finalize(stmt);
+    return result;
+}
+
+bool Database::setDisplayName(int userId, const std::string &name)
+{
+    const std::string &sql = sqlRepo.get("UPDATE_DISPLAY_NAME");
+
+    sqlite3_stmt *stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK)
+        return false;
+
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+    sqlite3_bind_int(stmt, 2, userId);
+
+    bool ok = (sqlite3_step(stmt) == SQLITE_DONE);
+    sqlite3_finalize(stmt);
+    return ok;
+}
+

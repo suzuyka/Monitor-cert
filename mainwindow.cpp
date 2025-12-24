@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "dataformwidget.h"
 #include "database.h"
+#include "profilewidget.h"
 
 #include <vector>
 #include <QWidget>
@@ -49,12 +50,15 @@ static QDate parseDate(const QString &s)
     return d;
 }
 
-MainWindow::MainWindow(Database *db, int userId, QWidget *parent)
+MainWindow::MainWindow(Database *db, int userId,
+                       const QString &username, QWidget *parent)
     : QMainWindow(parent),
       m_db(db),
       currentUserId(userId),
+      currentUsername(username),
       settingsWidget(new QWidget(this)),
-      settingsLabel(new QLabel("Раздел настроек", settingsWidget))
+      settingsLabel(new QLabel("Раздел настроек", settingsWidget)),
+      profileWidget(nullptr)
 {
     setupUi();
     loadTable(false);
@@ -73,11 +77,13 @@ void MainWindow::setupUi()
     auto *dataBtn    = new QPushButton("Данные");
     auto *reportsBtn = new QPushButton("Отчёты");
     auto *settingsBtn= new QPushButton("Настройки");
+    auto *profileBtn = new QPushButton("Профиль");
 
     topLayout->addWidget(homeBtn);
     topLayout->addWidget(dataBtn);
     topLayout->addWidget(reportsBtn);
     topLayout->addWidget(settingsBtn);
+    topLayout->addWidget(profileBtn);
     topLayout->addStretch();
 
     // ===== панель фильтров по сроку =====
@@ -159,14 +165,16 @@ void MainWindow::setupUi()
 
     settingsOuter->addWidget(settingsLabel);
 
-    auto *changePassBtn = new QPushButton("Сменить пароль");
     auto *aboutBtn      = new QPushButton("О программе");
     auto *logoutBtn     = new QPushButton("Выйти из приложения");
 
-    settingsOuter->addWidget(changePassBtn);
     settingsOuter->addWidget(aboutBtn);
     settingsOuter->addWidget(logoutBtn);
     settingsOuter->addStretch();
+
+    // ===== личный кабинет =====
+    profileWidget = new ProfileWidget(m_db, currentUserId, currentUsername, this);
+    profileWidget->hide();
 
     // ===== поиск =====
     auto *searchLayout = new QHBoxLayout;
@@ -204,11 +212,11 @@ void MainWindow::setupUi()
     mainLayout->addWidget(centerFrame);
     mainLayout->addWidget(reportsWidget);
     mainLayout->addWidget(settingsWidget);
+    mainLayout->addWidget(profileWidget);
     mainLayout->addLayout(searchLayout);
     mainLayout->addWidget(bottomWidget);
 
     // ================== логика UI ==================
-
     auto hideSearch = [=]()
     {
         searchLabel->hide();
@@ -217,6 +225,15 @@ void MainWindow::setupUi()
         searchEdit->clear();
         for (int row = 0; row < table->rowCount(); ++row)
             table->setRowHidden(row, false);
+    };
+
+    auto hideAllCenters = [=]()
+    {
+        table->hide();
+        formWidget->hide();
+        reportsWidget->hide();
+        settingsWidget->hide();
+        profileWidget->hide();
     };
 
     // нижние кнопки
@@ -280,11 +297,9 @@ void MainWindow::setupUi()
     // вкладка "Главная"
     QObject::connect(homeBtn, &QPushButton::clicked, [=]()
     {
-        table->show();
-        formWidget->hide();
-        reportsWidget->hide();
-        settingsWidget->hide();
+        hideAllCenters();
 
+        table->show();
         filterWidget->hide();
         hideSearch();
 
@@ -300,11 +315,9 @@ void MainWindow::setupUi()
     // вкладка "Данные"
     auto reloadDataTab = [=]()
     {
-        table->show();
-        formWidget->hide();
-        reportsWidget->hide();
-        settingsWidget->hide();
+        hideAllCenters();
 
+        table->show();
         filterWidget->show();
         hideSearch();
 
@@ -344,10 +357,9 @@ void MainWindow::setupUi()
     // вкладка "Отчёты"
     QObject::connect(reportsBtn, &QPushButton::clicked, [=]()
     {
-        table->hide();
-        formWidget->hide();
+        hideAllCenters();
+
         reportsWidget->show();
-        settingsWidget->hide();
 
         filterWidget->hide();
         hideSearch();
@@ -372,9 +384,8 @@ void MainWindow::setupUi()
     // вкладка "Настройки"
     QObject::connect(settingsBtn, &QPushButton::clicked, [=]()
     {
-        table->hide();
-        formWidget->hide();
-        reportsWidget->hide();
+        hideAllCenters();
+
         settingsWidget->show();
 
         filterWidget->hide();
@@ -385,10 +396,26 @@ void MainWindow::setupUi()
 
     QObject::connect(aboutBtn, &QPushButton::clicked,
                      this, &MainWindow::showAbout);
-    QObject::connect(changePassBtn, &QPushButton::clicked,
-                     this, &MainWindow::onChangePassword);
     QObject::connect(logoutBtn, &QPushButton::clicked,
                      this, &MainWindow::onLogout);
+                     
+    // вкладка "Профиль"
+    QObject::connect(profileBtn, &QPushButton::clicked, [=]() {
+        hideAllCenters();
+
+        profileWidget->setUser(currentUserId, currentUsername);
+        profileWidget->show();
+
+        filterWidget->hide();
+
+        hideSearch();
+
+        bottomWidget->hide();
+    });
+
+
+    QObject::connect(profileWidget->changePassButton(), &QPushButton::clicked,
+                 this, &MainWindow::onChangePassword);
 
     formWidget->onSave = [this](const Certificate &c)
     { onSaveForm(c); };
@@ -401,6 +428,7 @@ void MainWindow::setupUi()
 
     reportsWidget->hide();
     settingsWidget->hide();
+    profileWidget->hide();
     filterWidget->hide();
     hideSearch();
     bottomWidget->show();

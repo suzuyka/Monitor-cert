@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QCryptographicHash>
 
 LoginWindow::LoginWindow(Database *db, QWidget *parent)
     : QWidget(parent), m_db(db)
@@ -51,7 +52,8 @@ LoginWindow::LoginWindow(Database *db, QWidget *parent)
     resize(800, 500);
 }
 
-void LoginWindow::setOnLoginSuccess(const std::function<void(int)> &cb) {
+void LoginWindow::setOnLoginSuccess(const std::function<void(int, const QString&)> &cb)
+{
     onLoginSuccess = cb;
 }
 
@@ -59,9 +61,18 @@ void LoginWindow::onLogin() {
     std::string u = userEdit->text().toStdString();
     std::string p = passEdit->text().toStdString();
 
-    int uid = m_db->getUserId(u, p);
+    if (p.length() < 8) {
+        QMessageBox::warning(this, "Ошибка", "Пароль должен быть не менее 8 символов");
+        return;
+    }
+
+    QByteArray hash = QCryptographicHash::hash(passEdit->text().toUtf8(), QCryptographicHash::Sha256);
+    QString hashHex = hash.toHex();
+    int uid = m_db->getUserId(u, hashHex.toStdString());
+
     if (uid > 0) {
-        if (onLoginSuccess) onLoginSuccess(uid);
+        if (onLoginSuccess)
+            onLoginSuccess(uid, userEdit->text());
     } else {
         QMessageBox::warning(this,
                              "Ошибка",
@@ -69,7 +80,9 @@ void LoginWindow::onLogin() {
     }
 }
 
+
 void LoginWindow::onRegisterLink() {
     auto *reg = new RegisterWindow(m_db);
     reg->show();
 }
+

@@ -1,10 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
+#include "database.h"
+#include "profilewidget.h"
 
 #include <QMainWindow>
 #include <QLabel>
 #include <vector>
-#include "database.h"
 
 class QTableWidget;
 class DataFormWidget;
@@ -12,7 +13,11 @@ class QPushButton;
 
 class MainWindow : public QMainWindow {
 public:
-    explicit MainWindow(Database *db, int userId, QWidget *parent = nullptr);
+    explicit MainWindow(Database *db,
+                    int userId,
+                    const QString &username,
+                    QWidget *parent = nullptr);
+
 
 private:
     enum class ExportMode { All, Expired, Soon };
@@ -38,10 +43,13 @@ private:
     // ===== поля =====
     Database *m_db;
     int currentUserId;
+    QString currentUsername;
 
     QTableWidget *table;
     DataFormWidget *formWidget;
     QLabel *statsLabel = nullptr;
+
+    ProfileWidget *profileWidget = nullptr;
 
     QWidget *settingsWidget;
     QLabel *settingsLabel;

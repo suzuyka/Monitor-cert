@@ -9,10 +9,10 @@ int main(int argc, char *argv[]) {
     Database db("/app/data/db.sqlite");
 
     LoginWindow login(&db);
-
-    login.setOnLoginSuccess([&db, &login](int uid) {
-        auto *mw = new MainWindow(&db, uid);
-        mw->show();
+    
+    login.setOnLoginSuccess([&](int userId, const QString &username){
+        auto *w = new MainWindow(&db, userId, username);
+        w->show();
         login.close();
     });
 

@@ -2,8 +2,12 @@
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
-    password TEXT
+    password TEXT,
+    display_name TEXT
 );
+
+-- name: INSERT_USER
+INSERT INTO users (username, password, display_name) VALUES (?, ?, ?);
 
 -- name: CREATE_CERTS
 CREATE TABLE IF NOT EXISTS certificates (
@@ -14,9 +18,6 @@ CREATE TABLE IF NOT EXISTS certificates (
     description TEXT,
     user_id INTEGER
 );
-
--- name: INSERT_USER
-INSERT INTO users (username, password) VALUES (?, ?);
 
 -- name: CHECK_USER
 SELECT id FROM users WHERE username = ? AND password = ?;
@@ -51,3 +52,12 @@ DELETE FROM certificates WHERE user_id = ?;
 
 -- name: reset_certificates
 DELETE FROM sqlite_sequence WHERE name = 'certificates';
+
+-- name: ALTER_USERS_ADD_DISPLAY_NAME
+ALTER TABLE IF NOT EXISTS users ADD COLUMN display_name TEXT;
+
+-- name: UPDATE_DISPLAY_NAME
+UPDATE users SET display_name = ? WHERE id = ?;
+
+-- name: GET_DISPLAY_NAME
+SELECT display_name FROM users WHERE id = ?;

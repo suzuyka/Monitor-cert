@@ -23,7 +23,7 @@ DataFormWidget::DataFormWidget(QWidget *parent)
     auto *typeLayout = new QHBoxLayout;
     typeLayout->addWidget(new QLabel("Тип:"));
     typeCombo = new QComboBox;
-    typeCombo->addItems({"DV SSL", "OV SSL", "EV SSL", "IPsec", "Self-signed"});
+    typeCombo->addItems({"DV SSL", "OV SSL", "EV SSL", "IPsec", "Self-signed"}); //варианты сертификатов
     typeLayout->addWidget(typeCombo);
 
     auto *dateLayout = new QHBoxLayout;
